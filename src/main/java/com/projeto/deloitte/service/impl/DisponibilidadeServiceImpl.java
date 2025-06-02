@@ -145,11 +145,11 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
                 .orElseThrow(() -> new UsernameNotFoundException("Profissional não encontrado."));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
-            throw new RuntimeException("O ID fornecido não pertence a um profissional."); // TODO: Exceção customizada
+            throw new RuntimeException("O ID fornecido não pertence a um profissional.");
         }
 
         Servico servico = servicoRepository.findById(servicoId)
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
 
         // Validar se o serviço pertence ao profissional
         if (!servico.getProfissional().getId().equals(profissionalId)) {

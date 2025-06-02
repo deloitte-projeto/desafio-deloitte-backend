@@ -24,6 +24,8 @@ public class Disponibilidade {
     @Column(nullable = false)
     private DiaDaSemana diaDaSemana;
 
+    @Column(columnDefinition = "TIME")
     private LocalTime horaInicio;
+    @Column(columnDefinition = "TIME")
     private LocalTime horaFim;
 } 

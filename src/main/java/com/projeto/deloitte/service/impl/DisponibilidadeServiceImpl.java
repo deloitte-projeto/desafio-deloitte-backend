@@ -87,6 +87,10 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
             throw new UnauthorizedAccessException("Apenas PROFISSIONAIS podem cadastrar disponibilidade.");
         }
 
+        if (disponibilidadeRequestDTO.getHoraInicio().isAfter(disponibilidadeRequestDTO.getHoraFim())) {
+            throw new ValidationException("A hora de início não pode ser depois da hora de fim.");
+        }
+
         checkDisponibilidadeOverlap(
                 currentUser,
                 disponibilidadeRequestDTO.getDiaDaSemana(),
@@ -138,6 +142,10 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
         if (!existingDisponibilidade.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
             throw new UnauthorizedAccessException("Você não tem permissão para atualizar esta disponibilidade.");
+        }
+
+        if (disponibilidadeRequestDTO.getHoraInicio().isAfter(disponibilidadeRequestDTO.getHoraFim())) {
+            throw new ValidationException("A hora de início não pode ser depois da hora de fim.");
         }
 
         // Adicionar validação para não haver sobreposição de horários de disponibilidade para o mesmo profissional e dia

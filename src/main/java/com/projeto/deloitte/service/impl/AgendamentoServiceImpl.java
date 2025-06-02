@@ -130,8 +130,8 @@ public class AgendamentoServiceImpl implements AgendamentoService {
             throw new ValidationException("O ID fornecido não pertence a um cliente.");
         }
 
-        Page<Agendamento> agendamentosPage = agendamentoRepository.findByCliente(cliente, pageable);
-        return agendamentosPage.map(AgendamentoMapper::toResponseDTO);
+        Page<Agendamento> agendamentoPage = agendamentoRepository.findByCliente(cliente, pageable);
+        return agendamentoPage.map(AgendamentoMapper::toResponseDTO);
     }
 
     @Override
@@ -176,10 +176,10 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        Page<Agendamento> agendamentosPage = agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
+        Page<Agendamento> agendamentoPage = agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
                 profissional, startDateTime, endDateTime, pageable
         );
-        return agendamentosPage.map(AgendamentoMapper::toResponseDTO);
+        return agendamentoPage.map(AgendamentoMapper::toResponseDTO);
     }
 
     @Override
@@ -205,13 +205,13 @@ public class AgendamentoServiceImpl implements AgendamentoService {
 
     private DiaDaSemana mapDayOfWeekToDiaDaSemana(DayOfWeek dayOfWeek) {
         return switch (dayOfWeek) {
-            case MONDAY -> DiaDaSemana.SEGUNDA;
-            case TUESDAY -> DiaDaSemana.TERCA;
-            case WEDNESDAY -> DiaDaSemana.QUARTA;
-            case THURSDAY -> DiaDaSemana.QUINTA;
-            case FRIDAY -> DiaDaSemana.SEXTA;
-            case SATURDAY -> DiaDaSemana.SABADO;
-            case SUNDAY -> DiaDaSemana.DOMINGO;
+            case MONDAY -> DiaDaSemana.MONDAY;
+            case TUESDAY -> DiaDaSemana.TUESDAY;
+            case WEDNESDAY -> DiaDaSemana.WEDNESDAY;
+            case THURSDAY -> DiaDaSemana.THURSDAY;
+            case FRIDAY -> DiaDaSemana.FRIDAY;
+            case SATURDAY -> DiaDaSemana.SATURDAY;
+            case SUNDAY -> DiaDaSemana.SUNDAY;
         };
     }
 } 

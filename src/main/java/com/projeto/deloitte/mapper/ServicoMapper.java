@@ -3,7 +3,6 @@ package com.projeto.deloitte.mapper;
 import com.projeto.deloitte.dto.ServicoRequestDTO;
 import com.projeto.deloitte.dto.ServicoResponseDTO;
 import com.projeto.deloitte.model.Servico;
-import com.projeto.deloitte.model.User;
 
 public class ServicoMapper {
 

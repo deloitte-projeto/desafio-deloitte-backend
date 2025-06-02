@@ -3,8 +3,6 @@ package com.projeto.deloitte.mapper;
 import com.projeto.deloitte.dto.AgendamentoRequestDTO;
 import com.projeto.deloitte.dto.AgendamentoResponseDTO;
 import com.projeto.deloitte.model.Agendamento;
-import com.projeto.deloitte.model.User;
-import com.projeto.deloitte.model.Servico;
 import com.projeto.deloitte.enums.StatusAgendamento;
 
 public class AgendamentoMapper {

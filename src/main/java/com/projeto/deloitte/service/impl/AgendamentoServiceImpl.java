@@ -5,6 +5,10 @@ import com.projeto.deloitte.dto.AgendamentoResponseDTO;
 import com.projeto.deloitte.enums.StatusAgendamento;
 import com.projeto.deloitte.enums.TipoUsuario;
 import com.projeto.deloitte.enums.DiaDaSemana;
+import com.projeto.deloitte.exception.ResourceNotFoundException;
+import com.projeto.deloitte.exception.UnauthorizedAccessException;
+import com.projeto.deloitte.exception.ValidationException;
+import com.projeto.deloitte.exception.ScheduleConflictException;
 import com.projeto.deloitte.mapper.AgendamentoMapper;
 import com.projeto.deloitte.model.Agendamento;
 import com.projeto.deloitte.model.Disponibilidade;
@@ -16,6 +20,8 @@ import com.projeto.deloitte.repository.ServicoRepository;
 import com.projeto.deloitte.repository.UserRepository;
 import com.projeto.deloitte.service.AgendamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -53,21 +59,21 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     public AgendamentoResponseDTO createAgendamento(AgendamentoRequestDTO agendamentoRequestDTO) {
         User cliente = getCurrentAuthenticatedUser();
         if (cliente.getTipoUsuario() != TipoUsuario.CLIENTE) {
-            throw new RuntimeException("Apenas CLIENTES podem realizar agendamentos.");
+            throw new UnauthorizedAccessException("Apenas CLIENTES podem realizar agendamentos.");
         }
 
         User profissional = userRepository.findById(agendamentoRequestDTO.getProfissionalId())
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Profissional", "ID", agendamentoRequestDTO.getProfissionalId()));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
-            throw new RuntimeException("O ID fornecido não pertence a um profissional.");
+            throw new ValidationException("O ID fornecido não pertence a um profissional.");
         }
 
         Servico servico = servicoRepository.findById(agendamentoRequestDTO.getServicoId())
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Serviço", "ID", agendamentoRequestDTO.getServicoId()));
 
         if (!servico.getProfissional().getId().equals(profissional.getId())) {
-            throw new RuntimeException("O serviço não pertence ao profissional selecionado.");
+            throw new ValidationException("O serviço não pertence ao profissional selecionado.");
         }
 
         LocalDateTime dataHoraInicio = agendamentoRequestDTO.getDataHoraInicio();
@@ -87,7 +93,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         );
 
         if (!isAvailable) {
-            throw new RuntimeException("Horário fora da disponibilidade do profissional.");
+            throw new ValidationException("Horário fora da disponibilidade do profissional.");
         }
 
         // Validar conflitos de agendamento
@@ -101,7 +107,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         ).collect(Collectors.toList());
 
         if (!conflitos.isEmpty()) {
-            throw new RuntimeException("Horário já ocupado.");
+            throw new ScheduleConflictException("Horário já ocupado.");
         }
 
         Agendamento agendamento = AgendamentoMapper.toEntity(agendamentoRequestDTO);
@@ -109,36 +115,36 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         agendamento.setProfissional(profissional);
         agendamento.setServico(servico);
         agendamento.setDataHoraFim(dataHoraFim);
+        agendamento.setStatus(StatusAgendamento.AGENDADO);
 
         Agendamento savedAgendamento = agendamentoRepository.save(agendamento);
         return AgendamentoMapper.toResponseDTO(savedAgendamento);
     }
 
     @Override
-    public List<AgendamentoResponseDTO> getAgendamentosByCliente(Long clienteId) {
+    public Page<AgendamentoResponseDTO> getAgendamentosByCliente(Long clienteId, Pageable pageable) {
         User cliente = userRepository.findById(clienteId)
-                .orElseThrow(() -> new UsernameNotFoundException("Cliente não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente", "ID", clienteId));
 
         if (cliente.getTipoUsuario() != TipoUsuario.CLIENTE) {
-            throw new RuntimeException("O ID fornecido não pertence a um cliente.");
+            throw new ValidationException("O ID fornecido não pertence a um cliente.");
         }
 
-        return agendamentoRepository.findByCliente(cliente).stream()
-                .map(AgendamentoMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        Page<Agendamento> agendamentosPage = agendamentoRepository.findByCliente(cliente, pageable);
+        return agendamentosPage.map(AgendamentoMapper::toResponseDTO);
     }
 
     @Override
     public AgendamentoResponseDTO cancelAgendamento(Long agendamentoId) {
         Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
-                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Agendamento", "ID", agendamentoId));
 
         User currentUser = getCurrentAuthenticatedUser();
 
         if (!agendamento.getCliente().getId().equals(currentUser.getId()) &&
             !agendamento.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
-            throw new RuntimeException("Você não tem permissão para cancelar este agendamento.");
+            throw new UnauthorizedAccessException("Você não tem permissão para cancelar este agendamento.");
         }
 
         if (agendamento.getCliente().getId().equals(currentUser.getId())) {
@@ -154,42 +160,42 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     }
 
     @Override
-    public List<AgendamentoResponseDTO> getAgendaProfissional(
+    public Page<AgendamentoResponseDTO> getAgendaProfissional(
             Long profissionalId,
             LocalDate startDate,
-            LocalDate endDate
+            LocalDate endDate,
+            Pageable pageable
     ) {
         User profissional = userRepository.findById(profissionalId)
-                .orElseThrow(() -> new UsernameNotFoundException("Profissional não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Profissional", "ID", profissionalId));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
-            throw new RuntimeException("O ID fornecido não pertence a um profissional.");
+            throw new ValidationException("O ID fornecido não pertence a um profissional.");
         }
 
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        return agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
-                profissional, startDateTime, endDateTime
-        ).stream()
-                .map(AgendamentoMapper::toResponseDTO)
-                .collect(Collectors.toList());
+        Page<Agendamento> agendamentosPage = agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
+                profissional, startDateTime, endDateTime, pageable
+        );
+        return agendamentosPage.map(AgendamentoMapper::toResponseDTO);
     }
 
     @Override
     public AgendamentoResponseDTO completeAgendamento(Long agendamentoId) {
         Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
-                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
+                .orElseThrow(() -> new ResourceNotFoundException("Agendamento", "ID", agendamentoId));
 
         User currentUser = getCurrentAuthenticatedUser();
 
         if (!agendamento.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
-            throw new RuntimeException("Você não tem permissão para concluir este agendamento.");
+            throw new UnauthorizedAccessException("Você não tem permissão para concluir este agendamento.");
         }
 
         if (agendamento.getStatus() != StatusAgendamento.AGENDADO) {
-            throw new RuntimeException("Apenas agendamentos com status AGENDADO podem ser concluídos.");
+            throw new ValidationException("Apenas agendamentos com status AGENDADO podem ser concluídos.");
         }
 
         agendamento.setStatus(StatusAgendamento.CONCLUIDO);

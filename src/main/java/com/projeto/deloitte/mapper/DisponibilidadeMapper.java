@@ -3,7 +3,6 @@ package com.projeto.deloitte.mapper;
 import com.projeto.deloitte.dto.DisponibilidadeRequestDTO;
 import com.projeto.deloitte.dto.DisponibilidadeResponseDTO;
 import com.projeto.deloitte.model.Disponibilidade;
-import com.projeto.deloitte.model.User;
 
 public class DisponibilidadeMapper {
 

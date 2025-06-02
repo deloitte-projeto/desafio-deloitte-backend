@@ -15,8 +15,7 @@ public class AgendamentoMapper {
         }
         Agendamento agendamento = new Agendamento();
         agendamento.setDataHoraInicio(dto.getDataHoraInicio());
-        // cliente, profissional, servico e dataHoraFim serão setados no Service
-        agendamento.setStatus(StatusAgendamento.AGENDADO); // Status inicial
+        agendamento.setStatus(StatusAgendamento.AGENDADO);
         return agendamento;
     }
 

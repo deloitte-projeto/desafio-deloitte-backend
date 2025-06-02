@@ -53,7 +53,6 @@ public class AuthServiceImpl implements AuthService {
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
 
-        // Gerar token
         String token = jwtTokenProvider.generateToken(authentication);
 
         return new JwtAuthResponseDTO(token);

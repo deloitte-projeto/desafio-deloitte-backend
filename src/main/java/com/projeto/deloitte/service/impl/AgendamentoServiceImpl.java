@@ -53,21 +53,21 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     public AgendamentoResponseDTO createAgendamento(AgendamentoRequestDTO agendamentoRequestDTO) {
         User cliente = getCurrentAuthenticatedUser();
         if (cliente.getTipoUsuario() != TipoUsuario.CLIENTE) {
-            throw new RuntimeException("Apenas CLIENTES podem realizar agendamentos."); // TODO: Exceção customizada
+            throw new RuntimeException("Apenas CLIENTES podem realizar agendamentos.");
         }
 
         User profissional = userRepository.findById(agendamentoRequestDTO.getProfissionalId())
-                .orElseThrow(() -> new RuntimeException("Profissional não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new RuntimeException("Profissional não encontrado."));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
-            throw new RuntimeException("O ID fornecido não pertence a um profissional."); // TODO: Exceção customizada
+            throw new RuntimeException("O ID fornecido não pertence a um profissional.");
         }
 
         Servico servico = servicoRepository.findById(agendamentoRequestDTO.getServicoId())
-                .orElseThrow(() -> new RuntimeException("Serviço não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new RuntimeException("Serviço não encontrado."));
 
         if (!servico.getProfissional().getId().equals(profissional.getId())) {
-            throw new RuntimeException("O serviço não pertence ao profissional selecionado."); // TODO: Exceção customizada
+            throw new RuntimeException("O serviço não pertence ao profissional selecionado.");
         }
 
         LocalDateTime dataHoraInicio = agendamentoRequestDTO.getDataHoraInicio();
@@ -87,7 +87,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         );
 
         if (!isAvailable) {
-            throw new RuntimeException("Horário fora da disponibilidade do profissional."); // TODO: Exceção customizada
+            throw new RuntimeException("Horário fora da disponibilidade do profissional.");
         }
 
         // Validar conflitos de agendamento
@@ -101,7 +101,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         ).collect(Collectors.toList());
 
         if (!conflitos.isEmpty()) {
-            throw new RuntimeException("Horário já ocupado."); // TODO: Exceção customizada
+            throw new RuntimeException("Horário já ocupado.");
         }
 
         Agendamento agendamento = AgendamentoMapper.toEntity(agendamentoRequestDTO);
@@ -117,13 +117,11 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     @Override
     public List<AgendamentoResponseDTO> getAgendamentosByCliente(Long clienteId) {
         User cliente = userRepository.findById(clienteId)
-                .orElseThrow(() -> new UsernameNotFoundException("Cliente não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new UsernameNotFoundException("Cliente não encontrado."));
 
         if (cliente.getTipoUsuario() != TipoUsuario.CLIENTE) {
-            throw new RuntimeException("O ID fornecido não pertence a um cliente."); // TODO: Exceção customizada
+            throw new RuntimeException("O ID fornecido não pertence a um cliente.");
         }
-        
-        // TODO: Adicionar validação para que apenas o cliente logado ou ADMIN possa ver seus agendamentos
 
         return agendamentoRepository.findByCliente(cliente).stream()
                 .map(AgendamentoMapper::toResponseDTO)
@@ -133,25 +131,22 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     @Override
     public AgendamentoResponseDTO cancelAgendamento(Long agendamentoId) {
         Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
-                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
         User currentUser = getCurrentAuthenticatedUser();
 
-        // Validar se o usuário logado é o cliente do agendamento, o profissional ou um ADMIN
         if (!agendamento.getCliente().getId().equals(currentUser.getId()) &&
             !agendamento.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
-            throw new RuntimeException("Você não tem permissão para cancelar este agendamento."); // TODO: Exceção customizada
+            throw new RuntimeException("Você não tem permissão para cancelar este agendamento.");
         }
-
-        // TODO: Implementar regra de antecedência mínima para cancelamento
 
         if (agendamento.getCliente().getId().equals(currentUser.getId())) {
             agendamento.setStatus(StatusAgendamento.CANCELADO_CLIENTE);
         } else if (agendamento.getProfissional().getId().equals(currentUser.getId())) {
             agendamento.setStatus(StatusAgendamento.CANCELADO_PROFISSIONAL);
         } else if (currentUser.getTipoUsuario() == TipoUsuario.ADMIN) {
-             agendamento.setStatus(StatusAgendamento.CANCELADO_PROFISSIONAL); // Ou criar um status CANCELADO_ADMIN
+             agendamento.setStatus(StatusAgendamento.CANCELADO_PROFISSIONAL);
         }
 
         Agendamento canceledAgendamento = agendamentoRepository.save(agendamento);
@@ -165,13 +160,11 @@ public class AgendamentoServiceImpl implements AgendamentoService {
             LocalDate endDate
     ) {
         User profissional = userRepository.findById(profissionalId)
-                .orElseThrow(() -> new UsernameNotFoundException("Profissional não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new UsernameNotFoundException("Profissional não encontrado."));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
-            throw new RuntimeException("O ID fornecido não pertence a um profissional."); // TODO: Exceção customizada
+            throw new RuntimeException("O ID fornecido não pertence a um profissional.");
         }
-
-        // TODO: Adicionar validação para que apenas o profissional logado ou ADMIN possa ver sua agenda
 
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
@@ -186,18 +179,17 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     @Override
     public AgendamentoResponseDTO completeAgendamento(Long agendamentoId) {
         Agendamento agendamento = agendamentoRepository.findById(agendamentoId)
-                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado.")); // TODO: Exceção customizada
+                .orElseThrow(() -> new RuntimeException("Agendamento não encontrado."));
 
         User currentUser = getCurrentAuthenticatedUser();
 
-        // Validar se o usuário logado é o profissional do agendamento ou um ADMIN
         if (!agendamento.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
-            throw new RuntimeException("Você não tem permissão para concluir este agendamento."); // TODO: Exceção customizada
+            throw new RuntimeException("Você não tem permissão para concluir este agendamento.");
         }
 
         if (agendamento.getStatus() != StatusAgendamento.AGENDADO) {
-            throw new RuntimeException("Apenas agendamentos com status AGENDADO podem ser concluídos."); // TODO: Exceção customizada
+            throw new RuntimeException("Apenas agendamentos com status AGENDADO podem ser concluídos.");
         }
 
         agendamento.setStatus(StatusAgendamento.CONCLUIDO);
@@ -205,7 +197,6 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         return AgendamentoMapper.toResponseDTO(completedAgendamento);
     }
 
-    // Método auxiliar para mapear DayOfWeek para DiaDaSemana
     private DiaDaSemana mapDayOfWeekToDiaDaSemana(DayOfWeek dayOfWeek) {
         return switch (dayOfWeek) {
             case MONDAY -> DiaDaSemana.SEGUNDA;

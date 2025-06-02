@@ -9,4 +9,5 @@ import java.util.List;
 
 public interface AgendamentoRepository extends JpaRepository<Agendamento, Long> {
     List<Agendamento> findByProfissionalAndDataHoraInicioBetween(User profissional, LocalDateTime startOfDay, LocalDateTime endOfDay);
+    List<Agendamento> findByCliente(User cliente);
 } 

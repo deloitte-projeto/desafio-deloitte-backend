@@ -20,8 +20,6 @@ import com.projeto.deloitte.repository.ServicoRepository;
 import com.projeto.deloitte.repository.UserRepository;
 import com.projeto.deloitte.service.AgendamentoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -122,7 +120,7 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     }
 
     @Override
-    public Page<AgendamentoResponseDTO> getAgendamentosByCliente(Long clienteId, Pageable pageable) {
+    public List<AgendamentoResponseDTO> getAgendamentosByCliente(Long clienteId) {
         User cliente = userRepository.findById(clienteId)
                 .orElseThrow(() -> new ResourceNotFoundException("Cliente", "ID", clienteId));
 
@@ -130,8 +128,9 @@ public class AgendamentoServiceImpl implements AgendamentoService {
             throw new ValidationException("O ID fornecido não pertence a um cliente.");
         }
 
-        Page<Agendamento> agendamentoPage = agendamentoRepository.findByCliente(cliente, pageable);
-        return agendamentoPage.map(AgendamentoMapper::toResponseDTO);
+        return agendamentoRepository.findByCliente(cliente).stream()
+                .map(AgendamentoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -160,11 +159,10 @@ public class AgendamentoServiceImpl implements AgendamentoService {
     }
 
     @Override
-    public Page<AgendamentoResponseDTO> getAgendaProfissional(
+    public List<AgendamentoResponseDTO> getAgendaProfissional(
             Long profissionalId,
             LocalDate startDate,
-            LocalDate endDate,
-            Pageable pageable
+            LocalDate endDate
     ) {
         User profissional = userRepository.findById(profissionalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional", "ID", profissionalId));
@@ -176,10 +174,11 @@ public class AgendamentoServiceImpl implements AgendamentoService {
         LocalDateTime startDateTime = startDate.atStartOfDay();
         LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
 
-        Page<Agendamento> agendamentoPage = agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
-                profissional, startDateTime, endDateTime, pageable
-        );
-        return agendamentoPage.map(AgendamentoMapper::toResponseDTO);
+        return agendamentoRepository.findByProfissionalAndDataHoraInicioBetween(
+                profissional, startDateTime, endDateTime
+        ).stream()
+                .map(AgendamentoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override

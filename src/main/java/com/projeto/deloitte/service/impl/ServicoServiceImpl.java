@@ -13,12 +13,13 @@ import com.projeto.deloitte.repository.ServicoRepository;
 import com.projeto.deloitte.repository.UserRepository;
 import com.projeto.deloitte.service.ServicoService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 
 
@@ -60,9 +61,10 @@ public class ServicoServiceImpl implements ServicoService {
     }
 
     @Override
-    public Page<ServicoResponseDTO> getAllServicos(Pageable pageable) {
-        Page<Servico> servicosPage = servicoRepository.findAll(pageable);
-        return servicosPage.map(ServicoMapper::toResponseDTO);
+    public List<ServicoResponseDTO> getAllServicos() {
+        return servicoRepository.findAll().stream()
+                .map(ServicoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -103,7 +105,7 @@ public class ServicoServiceImpl implements ServicoService {
     }
 
     @Override
-    public Page<ServicoResponseDTO> getServicosByProfissional(Long profissionalId, Pageable pageable) {
+    public List<ServicoResponseDTO> getServicosByProfissional(Long profissionalId) {
         User profissional = userRepository.findById(profissionalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional", "ID", profissionalId));
 
@@ -111,7 +113,8 @@ public class ServicoServiceImpl implements ServicoService {
             throw new ValidationException("O ID fornecido não pertence a um profissional.");
         }
 
-        Page<Servico> servicosPage = servicoRepository.findByProfissional(profissional, pageable);
-        return servicosPage.map(ServicoMapper::toResponseDTO);
+        return servicoRepository.findByProfissional(profissional).stream()
+                .map(ServicoMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 } 

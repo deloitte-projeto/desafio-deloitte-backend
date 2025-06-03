@@ -20,8 +20,6 @@ import com.projeto.deloitte.repository.ServicoRepository;
 import com.projeto.deloitte.repository.UserRepository;
 import com.projeto.deloitte.service.DisponibilidadeService;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -35,7 +33,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
-
+import java.util.stream.Collectors;
 
 @Service
 public class DisponibilidadeServiceImpl implements DisponibilidadeService {
@@ -52,7 +50,6 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
     @Autowired
     private AgendamentoRepository agendamentoRepository;
 
-    // Helper method to get the current authenticated user
     private User getCurrentAuthenticatedUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String userEmail = authentication.getName();
@@ -60,20 +57,16 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuário logado não encontrado."));
     }
 
-    // Método auxiliar para verificar sobreposição de horários de disponibilidade
     private void checkDisponibilidadeOverlap(User profissional, DiaDaSemana diaDaSemana, LocalTime horaInicio, LocalTime horaFim, Long currentDisponibilidadeId) {
         List<Disponibilidade> existingDisponibilidades = disponibilidadeRepository.findByProfissionalAndDiaDaSemana(
                 profissional, diaDaSemana
         );
 
         for (Disponibilidade disp : existingDisponibilidades) {
-            // Ignora a própria disponibilidade ao atualizar
             if (currentDisponibilidadeId != null && Objects.equals(disp.getId(), currentDisponibilidadeId)) {
                 continue;
             }
 
-            // Verifica se os novos horários se sobrepõem aos existentes
-            // Critério de sobreposição: (Inicio1 < Fim2) AND (Fim1 > Inicio2)
             if (horaInicio.isBefore(disp.getHoraFim()) && horaFim.isAfter(disp.getHoraInicio())) {
                 throw new AvailabilityConflictException("Já existe um bloco de disponibilidade para este dia que se sobrepõe ao horário informado.");
             }
@@ -96,7 +89,7 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
                 disponibilidadeRequestDTO.getDiaDaSemana(),
                 disponibilidadeRequestDTO.getHoraInicio(),
                 disponibilidadeRequestDTO.getHoraFim(),
-                null // Não há ID de disponibilidade existente para criação
+                null
         );
 
         Disponibilidade disponibilidade = DisponibilidadeMapper.toEntity(disponibilidadeRequestDTO);
@@ -114,21 +107,23 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
     }
 
     @Override
-    public Page<DisponibilidadeResponseDTO> getAllDisponibilidades(Pageable pageable) {
-        Page<Disponibilidade> disponibilidadesPage = disponibilidadeRepository.findAll(pageable);
-        return disponibilidadesPage.map(DisponibilidadeMapper::toResponseDTO);
+    public List<DisponibilidadeResponseDTO> getAllDisponibilidades() {
+        return disponibilidadeRepository.findAll().stream()
+                .map(DisponibilidadeMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Page<DisponibilidadeResponseDTO> getDisponibilidadesByProfissional(Long profissionalId, Pageable pageable) {
+    public List<DisponibilidadeResponseDTO> getDisponibilidadesByProfissional(Long profissionalId) {
         User profissional = userRepository.findById(profissionalId)
                 .orElseThrow(() -> new ResourceNotFoundException("Profissional", "ID", profissionalId));
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
             throw new ValidationException("O ID fornecido não pertence a um profissional.");
         } 
-        Page<Disponibilidade> disponibilidadesPage = disponibilidadeRepository.findByProfissional(profissional, pageable);
-        return disponibilidadesPage.map(DisponibilidadeMapper::toResponseDTO);
+        return disponibilidadeRepository.findByProfissional(profissional).stream()
+                .map(DisponibilidadeMapper::toResponseDTO)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -138,7 +133,6 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
         Disponibilidade existingDisponibilidade = disponibilidadeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Disponibilidade", "ID", id));
 
-        // Validar se o profissional logado é o dono da disponibilidade ou um ADMIN
         if (!existingDisponibilidade.getProfissional().getId().equals(currentUser.getId()) &&
             currentUser.getTipoUsuario() != TipoUsuario.ADMIN) {
             throw new UnauthorizedAccessException("Você não tem permissão para atualizar esta disponibilidade.");
@@ -148,13 +142,12 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
             throw new ValidationException("A hora de início não pode ser depois da hora de fim.");
         }
 
-        // Adicionar validação para não haver sobreposição de horários de disponibilidade para o mesmo profissional e dia
         checkDisponibilidadeOverlap(
                 currentUser,
                 disponibilidadeRequestDTO.getDiaDaSemana(),
                 disponibilidadeRequestDTO.getHoraInicio(),
                 disponibilidadeRequestDTO.getHoraFim(),
-                id // Passa o ID da disponibilidade que está sendo atualizada para ignorá-la na validação
+                id
         );
 
         existingDisponibilidade.setDiaDaSemana(disponibilidadeRequestDTO.getDiaDaSemana());

@@ -12,10 +12,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -54,39 +50,23 @@ public class DisponibilidadeController {
         return ResponseEntity.ok(disponibilidade);
     }
 
-    @Operation(summary = "Lista todos os blocos de disponibilidade com paginação e ordenação", description = "Retorna uma lista paginada e ordenada de todos os blocos de disponibilidade registrados.")
-    @ApiResponse(responseCode = "200", description = "Lista de disponibilidades obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
+    @Operation(summary = "Lista todos os blocos de disponibilidade", description = "Retorna uma lista de todos os blocos de disponibilidade registrados.")
+    @ApiResponse(responseCode = "200", description = "Lista de disponibilidades obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = List.class)))
     @GetMapping
-    public ResponseEntity<Page<DisponibilidadeResponseDTO>> getAllDisponibilidades(
-            @Parameter(description = "Número da página (0-indexed, padrão: 0)")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamanho da página (padrão: 10)")
-            @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Critério de ordenação (ex: diaDaSemana,horaInicio,asc/desc)")
-            @RequestParam(defaultValue = "id,asc") String[] sort
+    public ResponseEntity<List<DisponibilidadeResponseDTO>> getAllDisponibilidades(
     ) {
-        Sort.Direction direction = Sort.Direction.fromString(sort[1]);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort[0]));
-        Page<DisponibilidadeResponseDTO> disponibilidades = disponibilidadeService.getAllDisponibilidades(pageable);
+        List<DisponibilidadeResponseDTO> disponibilidades = disponibilidadeService.getAllDisponibilidades();
         return ResponseEntity.ok(disponibilidades);
     }
 
-    @Operation(summary = "Lista blocos de disponibilidade por profissional com paginação e ordenação", description = "Retorna uma lista paginada e ordenada de blocos de disponibilidade definidos por um profissional específico.")
-    @ApiResponse(responseCode = "200", description = "Disponibilidades do profissional obtidas com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
+    @Operation(summary = "Lista blocos de disponibilidade por profissional", description = "Retorna uma lista de blocos de disponibilidade definidos por um profissional específico.")
+    @ApiResponse(responseCode = "200", description = "Disponibilidades do profissional obtidas com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = List.class)))
     @ApiResponse(responseCode = "404", description = "Profissional não encontrado")
     @GetMapping("/profissional/{profissionalId}")
-    public ResponseEntity<Page<DisponibilidadeResponseDTO>> getDisponibilidadesByProfissional(
-            @Parameter(description = "ID do profissional") @PathVariable Long profissionalId,
-            @Parameter(description = "Número da página (0-indexed, padrão: 0)")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamanho da página (padrão: 10)")
-            @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Critério de ordenação (ex: diaDaSemana,horaInicio,asc/desc)")
-            @RequestParam(defaultValue = "id,asc") String[] sort
+    public ResponseEntity<List<DisponibilidadeResponseDTO>> getDisponibilidadesByProfissional(
+            @Parameter(description = "ID do profissional") @PathVariable Long profissionalId
     ) {
-        Sort.Direction direction = Sort.Direction.fromString(sort[1]);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort[0]));
-        Page<DisponibilidadeResponseDTO> disponibilidades = disponibilidadeService.getDisponibilidadesByProfissional(profissionalId, pageable);
+        List<DisponibilidadeResponseDTO> disponibilidades = disponibilidadeService.getDisponibilidadesByProfissional(profissionalId);
         return ResponseEntity.ok(disponibilidades);
     }
 

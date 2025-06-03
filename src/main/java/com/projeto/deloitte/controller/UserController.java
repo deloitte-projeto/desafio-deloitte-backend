@@ -11,14 +11,12 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
@@ -49,23 +47,15 @@ public class UserController {
         return ResponseEntity.ok(updatedUser);
     }
 
-    @Operation(summary = "Lista todos os usuários com paginação e ordenação", description = "Retorna uma lista paginada e ordenada de todos os usuários registrados. Requer ROLE_ADMIN.")
-    @ApiResponse(responseCode = "200", description = "Lista de usuários obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Page.class)))
+    @Operation(summary = "Lista todos os usuários", description = "Retorna uma lista de todos os usuários registrados. Requer ROLE_ADMIN.")
+    @ApiResponse(responseCode = "200", description = "Lista de usuários obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = List.class)))
     @ApiResponse(responseCode = "401", description = "Não autorizado")
     @ApiResponse(responseCode = "403", description = "Acesso proibido (requer ROLE_ADMIN)")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
-    public ResponseEntity<Page<UserResponseDTO>> getAllUsers(
-            @Parameter(description = "Número da página (0-indexed, padrão: 0)")
-            @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Tamanho da página (padrão: 10)")
-            @RequestParam(defaultValue = "10") int size,
-            @Parameter(description = "Critério de ordenação (ex: nome,email,asc/desc)")
-            @RequestParam(defaultValue = "id,asc") String[] sort
+    public ResponseEntity<List<UserResponseDTO>> getAllUsers(
     ) {
-        Sort.Direction direction = Sort.Direction.fromString(sort[1]);
-        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sort[0]));
-        Page<UserResponseDTO> users = userService.getAllUsers(pageable);
+        List<UserResponseDTO> users = userService.getAllUsers();
         return ResponseEntity.ok(users);
     }
 
@@ -91,5 +81,15 @@ public class UserController {
     public ResponseEntity<String> deleteUser(@Parameter(description = "ID do usuário a ser deletado") @PathVariable Long id) {
         userService.deleteUser(id);
         return new ResponseEntity<>("Usuário deletado com sucesso!", HttpStatus.OK);
+    }
+
+    @Operation(summary = "Obtém uma lista de todos os profissionais", description = "Retorna uma lista de todos os usuários com o perfil PROFISSIONAL.")
+    @ApiResponse(responseCode = "200", description = "Lista de profissionais obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponseDTO.class, type = "array")))
+    @ApiResponse(responseCode = "401", description = "Não autorizado")
+    @ApiResponse(responseCode = "403", description = "Acesso proibido (apenas CLIENTES e ADMINS)")
+    @GetMapping("/professionals")
+    public ResponseEntity<List<UserResponseDTO>> getProfessionals() {
+        List<UserResponseDTO> professionals = userService.getProfessionals();
+        return ResponseEntity.ok(professionals);
     }
 } 

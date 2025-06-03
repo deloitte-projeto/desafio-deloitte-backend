@@ -5,6 +5,7 @@ import com.projeto.deloitte.dto.UserResponseDTO;
 
 import java.util.List;
 
+
 public interface UserService {
     UserResponseDTO registerUser(UserRequestDTO userRequestDTO);
     UserResponseDTO getCurrentUser();
@@ -12,4 +13,5 @@ public interface UserService {
     List<UserResponseDTO> getAllUsers();
     UserResponseDTO getUserById(Long userId);
     void deleteUser(Long userId);
+    List<UserResponseDTO> getProfessionals();
 } 

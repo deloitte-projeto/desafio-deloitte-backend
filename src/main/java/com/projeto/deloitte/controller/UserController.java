@@ -87,6 +87,7 @@ public class UserController {
     @ApiResponse(responseCode = "200", description = "Lista de profissionais obtida com sucesso", content = @Content(mediaType = "application/json", schema = @Schema(implementation = UserResponseDTO.class, type = "array")))
     @ApiResponse(responseCode = "401", description = "Não autorizado")
     @ApiResponse(responseCode = "403", description = "Acesso proibido (apenas CLIENTES e ADMINS)")
+    @PreAuthorize("hasRole('CLIENTE')")
     @GetMapping("/professionals")
     public ResponseEntity<List<UserResponseDTO>> getProfessionals() {
         List<UserResponseDTO> professionals = userService.getProfessionals();

@@ -85,4 +85,4 @@
 
 Quando você abrir o arquivo `.md` na sua IDE (ou em uma plataforma que suporte Mermaid), ele deverá renderizar o diagrama automaticamente!
 
-Há mais alguma parte da aplicação que você gostaria de documentar?
+Há mais alguma parte da aplicação que você gostaria de documentar?  

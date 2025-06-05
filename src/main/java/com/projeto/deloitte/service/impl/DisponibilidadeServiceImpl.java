@@ -120,7 +120,7 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
 
         if (profissional.getTipoUsuario() != TipoUsuario.PROFISSIONAL) {
             throw new ValidationException("O ID fornecido não pertence a um profissional.");
-        } 
+        }
         return disponibilidadeRepository.findByProfissional(profissional).stream()
                 .map(DisponibilidadeMapper::toResponseDTO)
                 .collect(Collectors.toList());
@@ -220,13 +220,12 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
 
                 boolean isConflict = false;
                 for (Agendamento agendamento : agendamentosDoDia) {
-                    if (!(slotEndDateTime.isBefore(agendamento.getDataHoraInicio()) ||
-                            slotStartDateTime.isAfter(agendamento.getDataHoraFim()))) {
+                    if (slotStartDateTime.isBefore(agendamento.getDataHoraFim()) &&
+                            agendamento.getDataHoraInicio().isBefore(slotEndDateTime)) {
                         isConflict = true;
                         break;
                     }
                 }
-
                 if (!isConflict) {
                     availableSlots.add(new TimeSlotDTO(slotStartDateTime, slotEndDateTime));
                 }
@@ -236,4 +235,4 @@ public class DisponibilidadeServiceImpl implements DisponibilidadeService {
         availableSlots.sort(Comparator.comparing(TimeSlotDTO::getStartTime));
         return availableSlots;
     }
-} 
+}
